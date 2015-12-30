@@ -12,7 +12,7 @@ var rename = require('gulp-rename');
 var sh = require('shelljs');
 var ngmin = require('gulp-ngmin');
 var stripDebug = require('gulp-strip-debug');
-gulp.task('minify', function() {
+gulp.task('build', function() {
     return gulp.src('src/*.js')
         .pipe(ngmin({dynamic: false}))
         .pipe(stripDebug())
