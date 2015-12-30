@@ -1,8 +1,8 @@
 {
-  "name": "nl-table",
+  "name": "nl-tables",
   "homepage": "https://github.com/tymonlin/nl-tables.git",
   "authors": [
-    "林春晖<tymonlin@163.com>"
+    "TymonLin<tymonlin@163.com>"
   ],
   "description": "新大陆关于数据表格的控件",
   "main": "",
