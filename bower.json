@@ -1,0 +1,16 @@
+{
+  "name": "nl-table",
+  "homepage": "https://github.com/TymonHui/nl-table",
+  "authors": [
+    "林春晖<tymonlin@163.com>"
+  ],
+  "description": "简单的表格及翻页控件",
+  "main": "",
+  "moduleType": [],
+  "keywords": [
+    "tables",
+    "turnpage",
+    "data"
+  ],
+  "license": "MIT"
+}
