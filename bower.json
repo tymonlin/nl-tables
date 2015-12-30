@@ -4,13 +4,13 @@
   "authors": [
     "林春晖<tymonlin@163.com>"
   ],
-  "description": "简单的表格及翻页控件",
+  "description": "新大陆关于数据表格的控件",
   "main": "",
   "moduleType": [],
   "keywords": [
+    "data",
     "tables",
-    "turnpage",
-    "data"
+    "newland"
   ],
   "license": "MIT"
 }

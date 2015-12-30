@@ -1,7 +1,7 @@
 {
   "name": "nl-tables",
   "version": "1.0.00",
-  "description": "Newland Compunter component about data tables",
+  "description": "Newland Compunter component for data tables",
   "dependencies": {
     "gulp": "^3.5.6",
     "gulp-sass": "^0.7.1",
