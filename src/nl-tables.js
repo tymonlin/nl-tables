@@ -6,32 +6,55 @@ angular.module('nlTables', [])
         return {
             restrict: 'A',
             template: "<span style='border: 0px'>" +
-                "<table class='table table-striped table-bordered table-hover'><thead><tr><td ng-if='showTableIndex'>#</td><td ng-repeat='column in nltable.columns'>{{column.title}}</td></tr></thead>" +
-                "<tbody><tr ng-repeat='row in nltable.data'><td ng-if='showTableIndex'>{{$index + 1}}</td><td ng-repeat='column in nltable.columns'>{{row[column.name]}}</td></tr></tbody></table>" +
-                "<ul class='pagination' style='margin:0px;'><li ng-class='{disabled:(nltable.page == 1) }'><a ng-click='nltable.pre()'><span aria-hidden='true'>&laquo;</span></a></li>" +
-                "<li ng-repeat='i in nltable.pages' ng-class='{active:(i.index == nltable.page)}'><a ng-click='nltable.go(i.index)'>{{i.text}}</a></li>" +
-                "<li ng-class='{disabled:(nltable.page == nltable.pageCount) }'><a ng-click='nltable.next()' ><span aria-hidden='true'>&raquo;</span></li></a></ul></span>",
+            "<table class='table table-striped table-bordered table-hover'><thead><tr><td ng-if='showTableIndex'>#</td><td ng-repeat='column in nltable.columns'>{{column.title}}</td></tr></thead>" +
+            "<tbody><tr ng-repeat='row in nltable.data'><td ng-if='showTableIndex'>{{$index + 1}}</td><td ng-repeat='column in nltable.columns' ng-class='[true: '']{column.}' ng-bind-html='column.format ? trustAsHtml(column.format(row[column.name])) : trustAsHtml(row[column.name])'></td></tr></tbody></table>" +
+            "<ul class='pagination' style='margin:0px;'><li ng-class='{disabled:(nltable.page == 1) }'><a ng-click='nltable.pre()'><span aria-hidden='true'>&laquo;</span></a></li>" +
+            "<li ng-repeat='i in nltable.pages' ng-class='{active:(i.index == nltable.page)}'><a ng-click='nltable.go(i.index)'>{{i.text}}</a></li>" +
+            "<li ng-class='{disabled:(nltable.page == nltable.pageCount) }'><a ng-click='nltable.next()' ><span aria-hidden='true'>&raquo;</span></li></a></ul></span>",
             replace: true
         };
     })
     .factory("NLTables", function() {
-        return function(scope, columns, callFunction, injectParam){
-            scope.nltable = {
+        return NLTables;
+
+        /**
+         * 初始化
+         * @param columns 字段
+         * @param callFunction 当页面跳转时触发的方法
+         * @param injectParam 拦截的参数
+         * @returns {{columns: *, pageRows: number, splitPages: number, pageCount: number, page: number, nextPage: *, prePage: *, go: scope.nltable."go", build: scope.nltable."build", next: scope.nltable."next", pre: scope.nltable."pre", pages: Array}|*}
+         * @constructor
+         */
+        function NLTables(columns, callFunction, injectParam){
+            var nltable = {
                 "columns": columns,
                 "pageRows": 10,
                 "splitPages": 2,
                 "pageCount": 0,
                 "page": 0,
-                "nextPage": injectParam.page || 1,
-                "prePage": injectParam.page || 1,
+                "nextPage": injectParam ? injectParam.page || 1 : 1,
+                "prePage": injectParam ? injectParam.page || 1 : 1,
                 "go": function(page) {
+                    //console.log("页码:" + page);
                     if (this.page == page) return;
                     this.page = page;
+                    var t = this;
+                    if(injectParam){
+                        injectParam.page = page;
+                    }
                     callFunction(injectParam || {},
                         function(data) {
-                            console.log(data);
-                            scope.nltable = angular.extend(scope.nltable, data);
-                            scope.nltable.build();
+                            t = angular.extend(t, data);
+                            t.build();
+                        }
+                    );
+                },
+                "refresh": function() {
+                    var t = this;
+                    callFunction(injectParam || {},
+                        function(data) {
+                            t = angular.extend(t, data);
+                            t.build();
                         }
                     );
                 },
@@ -62,13 +85,11 @@ angular.module('nlTables', [])
                             };
                         }
                         index++;
-
                         if (index > 20) break;
                     }
                     this.pages = p;
                     this.nextPage = this.page + 1 > pageCount ? pageCount : this.page + 1;
                     this.prePage = this.page == 1 ? 1 : this.page - 1;
-                    console.log(this);
                 },
                 "next": function(){
                     if (this.page + 1 > this.pageCount) return;
@@ -80,7 +101,7 @@ angular.module('nlTables', [])
                 },
                 "pages": []
             };
-            scope.nltable.go(injectParam.page || 1);
-            return scope.nltable;
+            nltable.go(injectParam ? injectParam.page || 1 : 1);
+            return nltable;
         }
     });
