@@ -5,12 +5,46 @@ angular.module('nlTables', [])
     .directive('nlTables', function() {
         return {
             restrict: 'A',
-            template: "<span style='border: 0px'>" +
-            "<table class='table table-striped table-bordered table-hover'><thead><tr><td ng-if='showTableIndex'>#</td><td ng-repeat='column in nltable.columns'>{{column.title}}</td></tr></thead>" +
-            "<tbody><tr ng-repeat='row in nltable.data'><td ng-if='showTableIndex'>{{$index + 1}}</td><td ng-repeat='column in nltable.columns' ng-class='[true: '']{column.}' ng-bind-html='column.format ? trustAsHtml(column.format(row[column.name])) : trustAsHtml(row[column.name])'></td></tr></tbody></table>" +
-            "<ul class='pagination' style='margin:0px;'><li ng-class='{disabled:(nltable.page == 1) }'><a ng-click='nltable.pre()'><span aria-hidden='true'>&laquo;</span></a></li>" +
-            "<li ng-repeat='i in nltable.pages' ng-class='{active:(i.index == nltable.page)}'><a ng-click='nltable.go(i.index)'>{{i.text}}</a></li>" +
-            "<li ng-class='{disabled:(nltable.page == nltable.pageCount) }'><a ng-click='nltable.next()' ><span aria-hidden='true'>&raquo;</span></li></a></ul></span>",
+            template:
+            //"<span>" +
+            "<table class='table table-striped table-hover table-bordered table-vmiddle table-condensed'>" +
+            "   <thead>" +
+            "       <tr>" +
+            "           <td ng-if='showTableIndex'>#</td>" +
+            "           <td ng-repeat='column in nltable.columns'>{{column.title}}</td>" +
+            "       </tr>" +
+            "   </thead>" +
+            "   <tbody>" +
+            "       <tr ng-if='nltable.data == undefined || nltable.data.length == 0'>" +
+            "           <td class='text-center tr-no-data' colspan='{{nltable.columns.length + 1}}' style='text-align: center'>" +
+            "               <span>{{nltable.tip.notFoundRecord}}</span>" +
+            "           </td>" +
+            "       </tr>" +
+            "       <tr ng-if='nltable.data.length > 0' ng-repeat='row in nltable.data'>" +
+            "           <td ng-if='showTableIndex'>{{$index + 1}}</td>" +
+            "           <td ng-repeat='column in nltable.columns' " +
+            "               ng-bind-html='(column.format ? column.format(row) : row[column.name])|trustAsHtml'></td>" +
+            "       </tr>" +
+            "   </tbody>" +
+            "</table>",
+            replace: true
+        };
+    })
+    .directive('nlTurnPage', function() {
+        return {
+            restrict: 'A',
+            template:
+            "<ul class='pagination' ng-show='nltable.rows > 0' style='margin:0px;'>" +
+            "   <li ng-class='{disabled:(nltable.pageNo == 1) }'>" +
+            "       <a ng-click='nltable.pre()'><span aria-hidden='true'>&laquo;</span></a>" +
+            "   </li>" +
+            "   <li ng-repeat='i in nltable.pages' ng-class='{active:(i.index == nltable.pageNo)}'>" +
+            "       <a ng-click='nltable.go(i.index)'>{{i.text}}</a>" +
+            "   </li>" +
+            "   <li ng-class='{disabled:(nltable.pageNo == nltable.pageCount) }'>" +
+            "       <a ng-click='nltable.next()' ><span aria-hidden='true'>&raquo;</span></a>" +
+            "   </li>" +
+            "</ul>",
             replace: true
         };
     })
@@ -22,25 +56,27 @@ angular.module('nlTables', [])
          * @param columns 字段
          * @param callFunction 当页面跳转时触发的方法
          * @param injectParam 拦截的参数
-         * @returns {{columns: *, pageRows: number, splitPages: number, pageCount: number, page: number, nextPage: *, prePage: *, go: scope.nltable."go", build: scope.nltable."build", next: scope.nltable."next", pre: scope.nltable."pre", pages: Array}|*}
+         * @returns {{columns: *, pageSize: number, splitPages: number, pageCount: number, pageNo: number, nextPage: *, prePage: *, go: scope.nltable."go", build: scope.nltable."build", next: scope.nltable."next", pre: scope.nltable."pre", pages: Array}|*}
          * @constructor
          */
         function NLTables(columns, callFunction, injectParam){
             var nltable = {
                 "columns": columns,
-                "pageRows": 10,
+                "pageSize": injectParam.pageSize,
                 "splitPages": 2,
                 "pageCount": 0,
-                "page": 0,
-                "nextPage": injectParam ? injectParam.page || 1 : 1,
-                "prePage": injectParam ? injectParam.page || 1 : 1,
-                "go": function(page) {
-                    //console.log("页码:" + page);
-                    if (this.page == page) return;
-                    this.page = page;
+                "pageNo": 0,
+                "nextPage": injectParam ? injectParam.pageNo || 1 : 1,
+                "prePage": injectParam ? injectParam.pageNo || 1 : 1,
+                "tip": {
+                    "notFoundRecord": "未找到记录"
+                },
+                "go": function(pageNo) {
+                    if (this.pageNo == pageNo) return;
+                    this.pageNo = pageNo;
                     var t = this;
                     if(injectParam){
-                        injectParam.page = page;
+                        injectParam.pageNo = pageNo;
                     }
                     callFunction(injectParam || {},
                         function(data) {
@@ -59,20 +95,20 @@ angular.module('nlTables', [])
                     );
                 },
                 "build": function() {
-                    var pageCount = Math.ceil(this.rows / this.pageRows);
+                    var pageCount = Math.ceil(this.rows / this.pageSize);
                     this.pageCount = pageCount == 0 ? 1 : pageCount;
                     var p = new Array();
                     this.splitPages = this.splitPages <= 3 ? 3 : this.splitPages;
 
                     var index = 0;
                     for (var i = 0; i < pageCount; i++) {
-                        if (i != 0 && i + 2 <= this.page - this.splitPages) {
+                        if (i != 0 && i + 2 <= this.pageNo - this.splitPages) {
                             p[index] = {
-                                "index": this.page - this.splitPages * 2 - 1,
+                                "index": this.pageNo - this.splitPages * 2 - 1,
                                 "text": "……"
                             };
-                            i = this.page - this.splitPages - 2;
-                        } else if (i == this.page + this.splitPages && i + 1 != this.pageCount) {
+                            i = this.pageNo - this.splitPages - 2;
+                        } else if (i == this.pageNo + this.splitPages && i + 1 != this.pageCount) {
                             p[index] = {
                                 "index": i + 1 + this.splitPages,
                                 "text": "……"
@@ -88,20 +124,20 @@ angular.module('nlTables', [])
                         if (index > 20) break;
                     }
                     this.pages = p;
-                    this.nextPage = this.page + 1 > pageCount ? pageCount : this.page + 1;
-                    this.prePage = this.page == 1 ? 1 : this.page - 1;
+                    this.nextPage = this.pageNo + 1 > pageCount ? pageCount : this.pageNo + 1;
+                    this.prePage = this.pageNo == 1 ? 1 : this.pageNo - 1;
                 },
                 "next": function(){
-                    if (this.page + 1 > this.pageCount) return;
-                    this.go(this.page + 1);
+                    if (this.pageNo + 1 > this.pageCount) return;
+                    this.go(this.pageNo + 1);
                 },
                 "pre": function() {
-                    if (this.page == 1) return;
-                    this.go(this.page - 1);
+                    if (this.pageNo == 1) return;
+                    this.go(this.pageNo - 1);
                 },
                 "pages": []
             };
-            nltable.go(injectParam ? injectParam.page || 1 : 1);
+            nltable.go(injectParam ? injectParam.pageNo || 1 : 1);
             return nltable;
         }
     });
