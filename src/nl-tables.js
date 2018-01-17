@@ -1,11 +1,24 @@
 /**
  * Created by linchunhui on 15/12/26.
- * Version 2.0.00
+ * Version 2.0.0
  * Desc 新增了click事件，radio，checkbox等。
  * 在 NLTable 中，新增了：
  *      checkAll: function()
  *      getSelected: function(getId)
  *
+ * 调用方法：
+ *  表格:
+ *      <div nl-tables table="table" radio="true" class="table-responsive"></div>
+ *      必填属性：
+ *      table: $scope的NLTable实例， 默认: table
+ *
+ *      可选属性：
+ *      radio: true/false
+ *      checkbox: true/false
+ *      show-table-index: true/false
+ *
+ *  翻页：
+ *      <div nl-turn-page table="table"></div>
  */
 
 angular.module('nlTables', [])
