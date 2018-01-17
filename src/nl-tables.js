@@ -1,48 +1,84 @@
 /**
  * Created by linchunhui on 15/12/26.
+ * Version 2.0.00
+ * Desc 新增了click事件，radio，checkbox等。
+ * 在 NLTable 中，新增了：
+ *      checkAll: function()
+ *      getSelected: function(getId)
+ *
  */
+
 angular.module('nlTables', [])
     .directive('nlTables', function() {
         return {
-            restrict: 'A',
+            restrict: 'EA',
+            scope: {
+                table: "=",
+                showTableIndex: "@",
+                checkbox: "@",
+                radio: "@"
+            },
+            controller: function($scope) {
+                $scope.getColumnHtml = function(column, row) {
+                    return (column.format ? column.format(row) : row[column.name]);
+                };
+                $scope.tdClick = function(column, row) {
+                    return column.click == undefined ? undefined : column.click(row);
+                };
+                $scope.changeRadio = function(changeRow) {
+                    if (changeRow.selected) {
+                        angular.forEach($scope.table.data, function(row) {
+                            if (!angular.equals(row, changeRow)) {
+                                row.selected = false;
+                            }
+                        });
+                    }
+                }
+            },
             template:
-            //"<span>" +
-            "<table class='table table-striped table-hover table-bordered table-vmiddle table-condensed'>" +
+            "<div><table class='table table-striped table-hover table-bordered table-vmiddle table-condensed'>" +
             "   <thead>" +
             "       <tr>" +
             "           <td ng-if='showTableIndex'>#</td>" +
-            "           <td ng-repeat='column in nltable.columns'>{{column.title}}</td>" +
+            "           <td ng-show='checkbox' class='text-center' ng-click='table.checkAll()' style='cursor: pointer;'>全选</td>" +  //<input type='checkbox' ng-model='isCheckAll' ng-click='checkAll()'>
+            "           <td ng-show='radio' class='text-center' style='cursor: pointer;'>选择</td>" +  //<input type='checkbox' ng-model='isCheckAll' ng-click='checkAll()'>
+            "           <td ng-repeat='column in table.columns' class='{{column.class}}'>{{column.title}}</td>" +
             "       </tr>" +
             "   </thead>" +
             "   <tbody>" +
-            "       <tr ng-if='nltable.data == undefined || nltable.data.length == 0'>" +
-            "           <td class='text-center tr-no-data' colspan='{{nltable.columns.length + 1}}' style='text-align: center'>" +
-            "               <span>{{nltable.tip.notFoundRecord}}</span>" +
+            "       <tr ng-if='table.data == undefined || table.data.length == 0'>" +
+            "           <td class='text-center tr-no-data' colspan='{{table.columns.length + 1}}'>" +
+            "               <span>{{table.tip.notFoundRecord}}</span>" +
             "           </td>" +
             "       </tr>" +
-            "       <tr ng-if='nltable.data.length > 0' ng-repeat='row in nltable.data'>" +
+            "       <tr ng-if='table.data.length > 0' ng-repeat='row in table.data'>" +
             "           <td ng-if='showTableIndex'>{{$index + 1}}</td>" +
-            "           <td ng-repeat='column in nltable.columns' " +
-            "               ng-bind-html='(column.format ? column.format(row) : row[column.name])|trustAsHtml'></td>" +
+            "           <td ng-show='checkbox | radio' class='text-center'><input type='checkbox' ng-click='radio ? changeRadio(row) : undefined' ng-model='row.selected'></td>" +
+            "           <td ng-repeat='column in table.columns' class='{{column.class}}' " +
+            "               ng-bind-html='getColumnHtml(column, row)|trustAsHtml' ng-click='tdClick(column, row)'></td>" +
             "       </tr>" +
             "   </tbody>" +
-            "</table>",
+            "</table></div>",
             replace: true
         };
     })
     .directive('nlTurnPage', function() {
         return {
-            restrict: 'A',
+            restrict: 'EA',
+            scope: {
+                table: "="
+            },
             template:
-            "<ul class='pagination' ng-show='nltable.rows > 0' style='margin:0px;'>" +
-            "   <li ng-class='{disabled:(nltable.pageNo == 1) }'>" +
-            "       <a ng-click='nltable.pre()'><span aria-hidden='true'>&laquo;</span></a>" +
+            "<ul class='pagination'>" +
+            "   <li><span>一共 {{table.rows}} 条记录，每页 {{table.pageSize}} 条，共 {{table.pageCount}} 页</span></li>" +
+            "   <li ng-class='{disabled:(table.pageNo == 1) }'>" +
+            "       <a ng-click='table.pre()'><span aria-hidden='true'>&laquo;</span></a>" +
             "   </li>" +
-            "   <li ng-repeat='i in nltable.pages' ng-class='{active:(i.index == nltable.pageNo)}'>" +
-            "       <a ng-click='nltable.go(i.index)'>{{i.text}}</a>" +
+            "   <li ng-repeat='i in table.pages' ng-class='{active:(i.index == table.pageNo)}'>" +
+            "       <a ng-click='table.go(i.index)'>{{i.text}}</a>" +
             "   </li>" +
-            "   <li ng-class='{disabled:(nltable.pageNo == nltable.pageCount) }'>" +
-            "       <a ng-click='nltable.next()' ><span aria-hidden='true'>&raquo;</span></a>" +
+            "   <li ng-class='{disabled:(table.pageNo == table.pageCount) }'>" +
+            "       <a ng-click='table.next()' ><span aria-hidden='true'>&raquo;</span></a>" +
             "   </li>" +
             "</ul>",
             replace: true
@@ -50,13 +86,12 @@ angular.module('nlTables', [])
     })
     .factory("NLTables", function() {
         return NLTables;
-
         /**
          * 初始化
          * @param columns 字段
          * @param callFunction 当页面跳转时触发的方法
          * @param injectParam 拦截的参数
-         * @returns {{columns: *, pageSize: number, splitPages: number, pageCount: number, pageNo: number, nextPage: *, prePage: *, go: scope.nltable."go", build: scope.nltable."build", next: scope.nltable."next", pre: scope.nltable."pre", pages: Array}|*}
+         * @returns {{columns: *, pageSize: number, splitPages: number, pageCount: number, pageNo: number, nextPage: *, prePage: *, tip: {notFoundRecord: string}, go: nltable."go", refresh: nltable."refresh", build: nltable."build", next: nltable."next", pre: nltable."pre", checkAll: nltable.checkAll, getSelected: nltable.getSelected, pages: Array}}
          * @constructor
          */
         function NLTables(columns, callFunction, injectParam){
@@ -89,6 +124,7 @@ angular.module('nlTables', [])
                     var t = this;
                     callFunction(injectParam || {},
                         function(data) {
+                            t.isCheckAll = false;
                             t = angular.extend(t, data);
                             t.build();
                         }
@@ -134,6 +170,31 @@ angular.module('nlTables', [])
                 "pre": function() {
                     if (this.pageNo == 1) return;
                     this.go(this.pageNo - 1);
+                },
+                checkAll: function() {
+                    if (this.data == undefined) {
+                        return;
+                    }
+                    if (this.isCheckAll != true) {
+                        this.isCheckAll = true;
+                    } else {
+                        this.isCheckAll = false;
+                    }
+                    for (var i = 0; i < this.data.length; i++) {
+                        var data = this.data[i];
+                        if (data) {
+                            data.selected = this.isCheckAll;
+                        }
+                    }
+                },
+                getSelected: function(getId) {
+                    var selectedRows = [];
+                    angular.forEach(this.data, function(row) {
+                        if (row.selected) {
+                            selectedRows.push(getId(row));
+                        }
+                    });
+                    return selectedRows;
                 },
                 "pages": []
             };
