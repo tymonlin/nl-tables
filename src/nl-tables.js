@@ -66,7 +66,7 @@ angular.module('nlTables', [])
             "       </tr>" +
             "       <tr ng-if='table.data.length > 0' ng-repeat='row in table.data'>" +
             "           <td ng-if='showTableIndex'>{{$index + 1}}</td>" +
-            "           <td ng-show='checkbox | radio' class='text-center'><input type='checkbox' ng-click='radio ? changeRadio(row) : undefined' ng-model='row.selected'></td>" +
+            "           <td ng-show='checkbox || radio' class='text-center'><input type='checkbox' ng-click='radio ? changeRadio(row) : undefined' ng-model='row.selected'></td>" +
             "           <td ng-repeat='column in table.columns' class='{{column.class}}' " +
             "               ng-bind-html='getColumnHtml(column, row)|trustAsHtml' ng-click='tdClick(column, row)'></td>" +
             "       </tr>" +
