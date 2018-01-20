@@ -21,7 +21,7 @@
  *      <div nl-turn-page table="table"></div>
  */
 
-angular.module('nlTable', ["com.newland.util"])
+angular.module('nlTables', ["com.newland.util"])
     .directive('nlTables', function(StringUtils) {
         return {
             restrict: 'EA',
