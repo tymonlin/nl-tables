@@ -21,8 +21,8 @@
  *      <div nl-turn-page table="table"></div>
  */
 
-angular.module('nlTables', [])
-    .directive('nlTables', function() {
+angular.module('nlTable', ["com.newland.util"])
+    .directive('nlTables', function(StringUtils) {
         return {
             restrict: 'EA',
             scope: {
@@ -35,6 +35,15 @@ angular.module('nlTables', [])
                 $scope.getColumnHtml = function(column, row) {
                     return (column.format ? column.format(row) : row[column.name]);
                 };
+                $scope.getCountColumnHtml = function(column, row) {
+                    if (column.countFormat) {
+                        return column.countFormat(row);
+                    }
+                    if (StringUtils.isEmpty(column)) {
+                        return '';
+                    }
+                    return row[column.countColumn];
+                }
                 $scope.tdClick = function(column, row) {
                     return column.click == undefined ? undefined : column.click(row);
                 };
@@ -47,31 +56,47 @@ angular.module('nlTables', [])
                         });
                     }
                 }
+
+                $scope.ignoreCount = 0;
+                if ($scope.showTableIndex) {
+                    $scope.ignoreCount+=1;
+                }
+                if ($scope.checkBox || $scope.radio) {
+                    $scope.ignoreCount+=1;
+                }
             },
             template:
-            "<div><table class='table table-striped table-hover table-bordered table-vmiddle table-condensed'>" +
-            "   <thead>" +
-            "       <tr>" +
-            "           <td ng-if='showTableIndex'>#</td>" +
-            "           <td ng-show='checkbox' class='text-center' ng-click='table.checkAll()' style='cursor: pointer;'>全选</td>" +  //<input type='checkbox' ng-model='isCheckAll' ng-click='checkAll()'>
-            "           <td ng-show='radio' class='text-center' style='cursor: pointer;'>选择</td>" +  //<input type='checkbox' ng-model='isCheckAll' ng-click='checkAll()'>
-            "           <td ng-repeat='column in table.columns' class='{{column.class}}'>{{column.title}}</td>" +
-            "       </tr>" +
-            "   </thead>" +
-            "   <tbody>" +
-            "       <tr ng-if='table.data == undefined || table.data.length == 0'>" +
-            "           <td class='text-center tr-no-data' colspan='{{table.columns.length + 1}}'>" +
-            "               <span>{{table.tip.notFoundRecord}}</span>" +
-            "           </td>" +
-            "       </tr>" +
-            "       <tr ng-if='table.data.length > 0' ng-repeat='row in table.data'>" +
-            "           <td ng-if='showTableIndex'>{{$index + 1}}</td>" +
-            "           <td ng-show='checkbox || radio' class='text-center'><input type='checkbox' ng-click='radio ? changeRadio(row) : undefined' ng-model='row.selected'></td>" +
-            "           <td ng-repeat='column in table.columns' class='{{column.class}}' " +
-            "               ng-bind-html='getColumnHtml(column, row)|trustAsHtml' ng-click='tdClick(column, row)'></td>" +
-            "       </tr>" +
-            "   </tbody>" +
-            "</table></div>",
+            "<div>" +
+            "   <table class='table table-striped table-hover table-bordered table-vmiddle table-condensed'>" +
+            "       <thead>" +
+            "           <tr>" +
+            "               <td ng-if='showTableIndex'>#</td>" +
+            "               <td ng-if='checkbox' class='text-center' ng-click='table.checkAll()' style='cursor: pointer;'>全选</td>" +  //<input type='checkbox' ng-model='isCheckAll' ng-click='checkAll()'>
+            "               <td ng-if='radio' class='text-center' style='cursor: pointer;'>选择</td>" +  //<input type='checkbox' ng-model='isCheckAll' ng-click='checkAll()'>
+            "              <td ng-repeat='column in table.columns' class='{{column.class}}'>{{column.title}}</td>" +
+            "          </tr>" +
+            "       </thead>" +
+            "       <tbody>" +
+            "           <tr ng-if='table.data == undefined || table.data.length == 0'>" +
+            "               <td class='text-center tr-no-data' colspan='{{table.columns.length + 1}}'>" +
+            "                   <span>{{table.tip.notFoundRecord}}</span>" +
+            "               </td>" +
+            "           </tr>" +
+            "           <tr ng-if='table.data.length > 0' ng-repeat='row in table.data'>" +
+            "               <td ng-if='showTableIndex'>{{$index + 1}}</td>" +
+            "               <td ng-if='checkbox || radio' class='text-center'><input type='checkbox' ng-click='radio ? changeRadio(row) : undefined' ng-model='row.selected'></td>" +
+            "               <td ng-repeat='column in table.columns' class='{{column.class}}' " +
+            "                   ng-bind-html='getColumnHtml(column, row)|trustAsHtml' ng-click='tdClick(column, row)'></td>" +
+            "           </tr>" +
+            "       </tbody>" +
+            "       <tfoot ng-if='table.statisticsRow != undefined && table.statisticsRow != {}'>" +
+            "           <tr><td class='text-center'>统计</td>" +
+            "               <td ng-repeat='column in table.columns' ng-if='!($index == 0 && ignoreCount==0)' " +
+            "                   ng-bind-html='getCountColumnHtml(column, table.statisticsRow) | trustAsHtml'></td>" +
+            "           </tr>" +
+            "       </tfoot>" +
+            "   </table>" +
+            "</div>",
             replace: true
         };
     })
@@ -108,9 +133,10 @@ angular.module('nlTables', [])
          * @constructor
          */
         function NLTables(columns, callFunction, injectParam){
+            injectParam = injectParam || {};
             var nltable = {
                 "columns": columns,
-                "pageSize": injectParam.pageSize,
+                "pageSize": injectParam.pageSize || 15,
                 "splitPages": 2,
                 "pageCount": 0,
                 "pageNo": 0,
