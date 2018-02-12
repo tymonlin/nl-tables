@@ -5,6 +5,8 @@
  * 在 NLTable 中，新增了：
  *      checkAll: function()
  *      getSelected: function(getId)
+ *      // 单个选框触发
+ *      checkboxChange: function(row, trIndex)
  *
  * 调用方法：
  *  表格:
@@ -21,7 +23,7 @@
  *      <div nl-turn-page table="table"></div>
  */
 
-angular.module('nlTables', ["com.newland.util"])
+angular.module('nlTables', [])
     .directive('nlTables', function(StringUtils) {
         return {
             restrict: 'EA',
@@ -42,20 +44,37 @@ angular.module('nlTables', ["com.newland.util"])
                     if (StringUtils.isEmpty(column)) {
                         return '';
                     }
-                    return row[column.countColumn];
-                }
-                $scope.tdClick = function(column, row) {
-                    return column.click == undefined ? undefined : column.click(row);
+                    var tdHtml = row[column.countColumn];
+                    return tdHtml;
                 };
-                $scope.changeRadio = function(changeRow) {
-                    if (changeRow.selected) {
-                        angular.forEach($scope.table.data, function(row) {
-                            if (!angular.equals(row, changeRow)) {
-                                row.selected = false;
-                            }
-                        });
+                $scope.tdClick = function(column, row, index) {
+                    return column.click == undefined ? undefined : column.click(row, index);
+                };
+                $scope.checkboxAllClick = function() {
+                    $scope.table.checkAll();
+                };
+                $scope.checkboxChange = function(row, trIndex) {
+                    if (typeof $scope.table.checkboxChange == 'function') {
+                        $scope.table.checkboxChange(row, trIndex);
                     }
-                }
+                    if ($scope.radio) {
+                        if (row.selected) {
+                            angular.forEach($scope.table.data, function(row) {
+                                if (!angular.equals(row, changeRow)) {
+                                    row.selected = false;
+                                    if (typeof $scope.table.checkboxChange == 'function') {
+                                        $scope.table.checkboxChange(row, trIndex);
+                                    }
+                                }
+                            });
+                        }
+                    }
+                };
+                $scope.iconClick = function(column, row, $index) {
+                    if (typeof column.iconClick == 'function') {
+                        column.iconClick(row, $index);
+                    }
+                };
 
                 $scope.ignoreCount = 0;
                 if ($scope.showTableIndex) {
@@ -71,7 +90,7 @@ angular.module('nlTables', ["com.newland.util"])
             "       <thead>" +
             "           <tr>" +
             "               <td ng-if='showTableIndex'>#</td>" +
-            "               <td ng-if='checkbox' class='text-center' ng-click='table.checkAll()' style='cursor: pointer;'>全选</td>" +  //<input type='checkbox' ng-model='isCheckAll' ng-click='checkAll()'>
+            "               <td ng-if='checkbox' class='text-center' ng-click='checkboxAllClick()' style='cursor: pointer;'>全选</td>" +  //<input type='checkbox' ng-model='isCheckAll' ng-click='checkAll()'>
             "               <td ng-if='radio' class='text-center' style='cursor: pointer;'>选择</td>" +  //<input type='checkbox' ng-model='isCheckAll' ng-click='checkAll()'>
             "              <td ng-repeat='column in table.columns' class='{{column.class}}'>{{column.title}}</td>" +
             "          </tr>" +
@@ -82,11 +101,14 @@ angular.module('nlTables', ["com.newland.util"])
             "                   <span>{{table.tip.notFoundRecord}}</span>" +
             "               </td>" +
             "           </tr>" +
-            "           <tr ng-if='table.data.length > 0' ng-repeat='row in table.data'>" +
+            "           <tr ng-if='table.data.length > 0' class='nl-table-body-tr' ng-repeat='row in table.data' ng-init='rowIndex = $index'>" +
             "               <td ng-if='showTableIndex'>{{$index + 1}}</td>" +
-            "               <td ng-if='checkbox || radio' class='text-center'><input type='checkbox' ng-click='radio ? changeRadio(row) : undefined' ng-model='row.selected'></td>" +
+            "               <td ng-if='checkbox || radio' class='text-center'><input type='checkbox' ng-change='checkboxChange(row, $index)' ng-model='row.selected'></td>" +
             "               <td ng-repeat='column in table.columns' class='{{column.class}}' " +
-            "                   ng-bind-html='getColumnHtml(column, row)|trustAsHtml' ng-click='tdClick(column, row)'></td>" +
+            "                  ng-click='tdClick(column, row, rowIndex)'>" +
+            "                   <span ng-bind-html='getColumnHtml(column, row)|trustAsHtml'></span> " +
+            "                   <i ng-if='column.iconClass != undefined' class='pull-right {{column.iconClass}}' ng-click='iconClick(column, row, $index)'></i>" +
+            "               </td>" +
             "           </tr>" +
             "       </tbody>" +
             "       <tfoot ng-if='table.statisticsRow != undefined && table.statisticsRow != {}'>" +
@@ -224,13 +246,17 @@ angular.module('nlTables', ["com.newland.util"])
                         if (data) {
                             data.selected = this.isCheckAll;
                         }
+                        if (typeof this.checkboxChange == 'function') {
+                            this.checkboxChange(data, i+1);
+                        }
                     }
                 },
-                getSelected: function(getId) {
+                getSelected: function(getDataFun) {
                     var selectedRows = [];
-                    angular.forEach(this.data, function(row) {
+                    angular.forEach(this.data, function(row, index) {
                         if (row.selected) {
-                            selectedRows.push(getId(row));
+                            var d = getDataFun(row, index);
+                            if (d != undefined) selectedRows.push(d);
                         }
                     });
                     return selectedRows;
