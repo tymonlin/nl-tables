@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Newland tables demo</title>
+    <script src="https://cdn.staticfile.org/angular.js/1.6.8/angular.min.js"></script>
+    <script src="bower_components/jquery/dist/jquery.min.js"></script>
+    <script src="bower_components/angular-resource/angular-resource.min.js"></script>
+    <script src="bower_components/angular-translate/angular-translate.min.js"></script>
+    <script src="bower_components/angular-translate-loader-static-files/angular-translate-loader-static-files.min.js"></script>
+    <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.min.css">
+    <script src="nl-tables.js?v=2"></script>
+    <link rel="stylesheet" href="nl-tables.css">
+</head>
+<body>
+    <script>
+        var app = angular.module("app", ["module.newland.table", "ngResource", "pascalprecht.translate"]);
+        app.factory("UserResource", ["$resource", function ($resource) {
+            return $resource("test-data.json", {}, {
+                query: {
+                    isArray: false
+                }
+            });
+        }]);
+        app.config(["$translateProvider", "$NLTablesProvider", function ($translateProvider, $NLTablesProvider) {
+            $translateProvider.useStaticFilesLoader({
+                prefix: 'i18n/',
+                suffix: '.json'
+            });
+            $translateProvider.fallbackLanguage('zh-cn');//默认加载语言包
+            $translateProvider.use("zh-cn");
+            $NLTablesProvider.setI18n({
+                'zh-cn': {
+                    "checkAll": "全选",
+                    "select": "选择",
+                    "statistics": "统计",
+                    "turnpage_word_1": "共",
+                    "turnpage_word_2": "行,",
+                    "turnpage_word_4": "页"
+                }});
+        }]);
+        app.controller("NLTableDemoCtrl", ["$scope", "UserResource", "NLTables", function ($scope, UserResource, NLTables) {
+            $scope.initTable = function () {
+                var injectParam = {pageSize: 15};
+                var columns = [
+                    {
+                        "title": "登陆账号",
+                        "name": "userName"
+                    },
+                    {
+                        "translateKey": "label.mobile",
+                        "name": "mobile"
+                    },
+                    {
+                        "translateKey": "label.belong_name",
+                        "name": "belongName"
+                    },
+                    {
+                        "translateKey": "label.last_login_time",
+                        "name": "lastLoginTime"
+                    },
+                    {
+                        "translateKey": "label.status",
+                        format: function (row) {
+                            if (row.status == 0) {
+                                return "<span style='color: darkred'>锁定</span>";
+                            } else if (row.status == 1) {
+                                return "解锁";
+                            }
+                        }
+                    },
+                    {
+                        "translateKey": "label.lock_unlock",
+                        "class": "text-center",
+                        "format": function(row) {
+                            return row.status == 1 ? "<i class='fa fa-lock'></i>" : "<i class='fa fa-unlock'></i>";
+                        },
+                        "click": function(row) {
+                            if (row.status == 1) {
+                                console.log("LOCK");
+                            } else {
+                                console.log("UNLOCK");
+                            }
+
+                        }
+                    }
+                ];
+
+                $scope.table = NLTables(columns, function (injectParam, serverRequest) {
+                    UserResource.query({
+                        "pageNo": injectParam.pageNo,
+                        "pageSize": injectParam.pageSize,
+                        "orgId": $scope.orgId,
+                        "status": $scope.status,
+                        "condition": $scope.condition
+                    }, function(data){
+                        serverRequest(data);
+                    }, function (error) {
+                        alert(error.message);
+                    });
+                }, injectParam);
+            }
+
+        }]);
+
+    </script>
+
+
+    <div ng-app="app" ng-controller="NLTableDemoCtrl">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <span><i class="fa fa-table"></i> Newland Tables Demo</span>
+            </div>
+            <nl-tables table="table" class="table-responsive" ng-init="initTable()"></nl-tables>
+            <div class="text-right panel-footer nl-table-turnpage">
+                <div nl-turn-page table="table"></div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

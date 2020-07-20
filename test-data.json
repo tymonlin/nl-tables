@@ -1,0 +1,27 @@
+{
+    "pageSize": 15,
+    "pageNo": 1,
+    "rows": 1,
+    "data": [
+        {
+            "userId": 1,
+            "characterCode": "ADMIN",
+            "keyId": 1,
+            "orgId": null,
+            "orgCode": null,
+            "storeUuid": null,
+            "userName": "ADMIN",
+            "password": null,
+            "name": null,
+            "email": null,
+            "mobile": "13800000001",
+            "managerFlag": null,
+            "lastLoginTime": "2020-07-10T05:06:23.000+0000",
+            "creUserId": null,
+            "status": 1,
+            "menuFunctionList": null,
+            "orgName": null
+        }
+    ],
+    "statisticalRow": null
+}

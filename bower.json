@@ -1,17 +1,31 @@
 {
   "name": "nl-tables",
-  "homepage": "https://github.com/tymonlin/nl-tables.git",
+  "version": "3.0.5",
+  "homepage": "https://github.com/tymonlin/nl-tables",
   "authors": [
-    "TymonLin<tymonlin@163.com>"
+    "Tymon <tymonlin@163.com>"
   ],
-  "description": "新大陆关于数据表格的控件",
+  "description": "",
   "main": "",
-  "moduleType": [],
   "keywords": [
-    "data",
-    "tables",
-    "newland",
-    "tymonlin"
+    "table"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "angular": "^1.6.8",
+    "nl-utils": "^1.0.3",
+    "angular-translate": "^2.18.3"
+  },
+  "devDependencies": {
+    "angular-resource": "^1.8.0",
+    "bootstrap": "^4.5.0",
+    "angular-translate-loader-static-files": "^2.18.3"
+  }
 }

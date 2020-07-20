@@ -1,6 +1,6 @@
 /**
  * Created by linchunhui on 15/12/26.
- * Version 2.1.1
+ * Version 3.0.5
  * Desc 新增了click事件，radio，checkbox等。
  * 在 NLTable 中，新增了：
  *      checkAll: function()
@@ -21,9 +21,31 @@
  *
  *  翻页：
  *      <div nl-turn-page table="table"></div>
+ *
+ * i18n:
+ *      目前支持 zh-cn 和 en 两种，默认是:zh-cn， 如果需要其它语种支持，可以通过 app.config进行配置，参考代码如下，也可参考 nl-tables-demo.html：
+ *      app.config(["$translateProvider", "$NLTablesProvider", function ($translateProvider, $NLTablesProvider) {
+            $translateProvider.useStaticFilesLoader({
+                prefix: 'i18n/',
+                suffix: '.json'
+            });
+            $translateProvider.fallbackLanguage('zh-cn');//默认加载语言包
+            $translateProvider.use("zh-cn");
+            $NLTablesProvider.setI18n({
+                'zh-cn': {
+                    "checkAll": "全选",
+                    "select": "选择",
+                    "statistics": "统计",
+                    "turnpage_word_1": "一共(这里是测试的)",
+                    "turnpage_word_2": "条记录，每页",
+                    "turnpage_word_3": "条，共",
+                    "turnpage_word_4": "条"
+                }});
+        }]);
  */
-angular.module('nlTables', [])
-    .directive('nlTables', function(StringUtils) {
+(function (angular) {
+    var nlTables = angular.module("module.newland.table", []);
+    nlTables.directive("nlTables", function () {
         return {
             restrict: 'EA',
             scope: {
@@ -36,85 +58,16 @@ angular.module('nlTables', [])
                 unselected: "@",
                 selectRowFlag: "@"
             },
-            controller: function($scope) {
-                $scope.autoUnselected = $scope.unselected == undefined || $scope.unselected == '' ? true : Boolean.valueOf($scope.unselected);
-                $scope.selectedFlag = $scope.selectRowFlag == undefined ? false : $scope.selectRowFlag == '' ? true : Boolean.valueOf($scope.selectRowFlag);
-
-                $scope.getColumnHtml = function(column, row) {
-                    return (column.format ? column.format(row) : row[column.name]);
-                };
-                $scope.getCountColumnHtml = function(column, row) {
-                    return column.countFormat?column.countFormat(row):StringUtils.isEmpty(column.countColumn)?'':row[column.countColumn];
-                };
-                $scope.tdClick = function(column, row, columnIndex, trIndex) {
-                    if ($scope.hasCheckboxOrRadio()) row.selected = !row.selected, $scope.checkboxChange(row, trIndex);
-                    if (column.click == undefined && $scope.selectedFlag) {
-                        $scope.selectedRow = $scope.selectedRow == undefined || !$scope.autoUnselected || !angular.equals(row, $scope.selectedRow) ? row : undefined;
-                    } else if (column.click != undefined) {
-                        return column.click(row, columnIndex);
-                    }
-                };
-                $scope.isSelected = function(row) {
-                    var ret = $scope.selectRow();
-                    if (ret == undefined && $scope.selectedFlag) {
-                        return angular.equals(row, $scope.selectedRow);
-                    }
-                    return ret == undefined ? false : ret;
-                };
-                $scope.checkboxChange = function(changeRow, trIndex) {
-                    if (typeof $scope.table.checkboxChange == 'function') {
-                        $scope.table.checkboxChange(changeRow, trIndex);
-                    }
-                    if ($scope.hasRadio() && changeRow.selected) {
-                        angular.forEach($scope.table.data, function(row) {
-                            if (!angular.equals(row, changeRow)) {
-                                row.selected = false;
-                                if (typeof $scope.table.checkboxChange == 'function') {
-                                    $scope.table.checkboxChange(row, trIndex);
-                                }
-                            }
-                        });
-                    }
-                };
-                $scope.iconClick = function(column, row, $index) {
-                    if (typeof column.iconClick == 'function') {
-                        column.iconClick(row, $index);
-                    }
-                };
-                $scope.hasCheckboxOrRadio = function() {
-                    return $scope.checkbox == '' || $scope.checkbox == 'true' || $scope.radio == '' || $scope.radio == 'true';
-                };
-                $scope.hasCheckbox = function() {
-                    return $scope.checkbox == '' || $scope.checkbox == 'true';
-                };
-                $scope.hasRadio = function() {
-                    return $scope.radio == '' || $scope.radio == 'true';
-                };
-                $scope.show = function (column) {
-                    if (typeof column.show == 'function') {
-                        return column.show();
-                    } else if (typeof column.show == 'boolean') {
-                        return column.show;
-                    }
-                    return true;
-                };
-                $scope.ignoreCount = 0;
-                if ($scope.showTableIndex) {
-                    $scope.ignoreCount+=1;
-                }
-                if ($scope.hasCheckboxOrRadio()) {
-                    $scope.ignoreCount+=1;
-                }
-            },
+            controller: ["$scope", $nlTablesController],
             template:
                 "<div>" +
                 "   <table class='table table-striped table-hover table-bordered table-vmiddle table-condensed'>" +
                 "       <thead>" +
                 "           <tr style='font-weight: bold;'>" +
                 "               <td ng-if='showTableIndex'>#</td>" +
-                "               <td ng-if='hasCheckbox()' class='text-center' ng-click='table.checkAll()' style='cursor: pointer;'>全选</td>" +  //<input type='checkbox' ng-model='isCheckAll' ng-click='checkAll()'>
-                "               <td ng-if='hasRadio()' class='text-center' style='cursor: pointer;'>选择</td>" +  //<input type='checkbox' ng-model='isCheckAll' ng-click='checkAll()'>
-                "              <td ng-repeat='column in table.columns' ng-show='show(column)' class='{{column.class}}'>{{column.title}}</td>" +
+                "               <td ng-if='hasCheckbox()' class='text-center' ng-click='table.checkAll()' style='cursor: pointer;'>{{'checkAll'|NLTableTranslate}}</td>" +  //<input type='checkbox' ng-model='isCheckAll' ng-click='checkAll()'>
+                "               <td ng-if='hasRadio()' class='text-center' style='cursor: pointer;'>{{ 'select' | NLTableTranslate}}</td>" +  //<input type='checkbox' ng-model='isCheckAll' ng-click='checkAll()'>
+                "              <td ng-repeat='column in table.columns' ng-show='show(column)' class='{{column.class}}'>{{column.title ? column.title : (column.translateKey | NLTableTranslate)}}</td>" +
                 "          </tr>" +
                 "       </thead>" +
                 "       <tbody>" +
@@ -131,7 +84,7 @@ angular.module('nlTables', [])
                 "           </tr>" +
                 "       </tbody>" +
                 "       <tfoot ng-if='table.rows > 0 && table.statisticsRow != undefined && table.statisticsRow != {}'>" +
-                "           <tr style='background-color: #CCFFFF'><td class='text-center'>统计</td>" +
+                "           <tr style='background-color: #CCFFFF'><td class='text-center'>{{ 'statistics' | NLTableTranslate}}</td>" +
                 "               <td ng-repeat='column in table.columns' ng-if='!($index == 0 && ignoreCount==0)' class='{{column.class}}' " +
                 "                   ng-bind-html='getCountColumnHtml(column, table.statisticsRow) | trustAsHtml'></td>" +
                 "           </tr>" +
@@ -140,8 +93,125 @@ angular.module('nlTables', [])
                 "</div>",
             replace: true
         };
-    })
-    .directive('nlTurnPage', function() {
+        function $nlTablesController($scope) {
+            $scope.autoUnselected = $scope.unselected == undefined || $scope.unselected == '' ? true : Boolean.valueOf($scope.unselected);
+            $scope.selectedFlag = $scope.selectRowFlag == undefined ? false : $scope.selectRowFlag == '' ? true : Boolean.valueOf($scope.selectRowFlag);
+            $scope.getColumnHtml = function(column, row) {
+                return (column.format ? column.format(row) : row[column.name]);
+            };
+            $scope.getCountColumnHtml = function(column, row) {
+                return column.countFormat?column.countFormat(row):StringUtils.isEmpty(column.countColumn)?'':row[column.countColumn];
+            };
+            $scope.tdClick = function(column, row, columnIndex, trIndex) {
+                if ($scope.hasCheckboxOrRadio()) row.selected = !row.selected, $scope.checkboxChange(row, trIndex);
+                if (column.click == undefined && $scope.selectedFlag) {
+                    $scope.selectedRow = $scope.selectedRow == undefined || !$scope.autoUnselected || !angular.equals(row, $scope.selectedRow) ? row : undefined;
+                } else if (column.click != undefined) {
+                    return column.click(row, columnIndex);
+                }
+            };
+            $scope.isSelected = function(row) {
+                var ret = $scope.selectRow();
+                if (ret == undefined && $scope.selectedFlag) {
+                    return angular.equals(row, $scope.selectedRow);
+                }
+                return ret == undefined ? false : ret;
+            };
+            $scope.checkboxChange = function(changeRow, trIndex) {
+                if (typeof $scope.table.checkboxChange == 'function') {
+                    $scope.table.checkboxChange(changeRow, trIndex);
+                }
+                if ($scope.hasRadio() && changeRow.selected) {
+                    angular.forEach($scope.table.data, function(row) {
+                        if (!angular.equals(row, changeRow)) {
+                            row.selected = false;
+                            if (typeof $scope.table.checkboxChange == 'function') {
+                                $scope.table.checkboxChange(row, trIndex);
+                            }
+                        }
+                    });
+                }
+            };
+            $scope.iconClick = function(column, row, $index) {
+                if (typeof column.iconClick == 'function') {
+                    column.iconClick(row, $index);
+                }
+            };
+            $scope.hasCheckboxOrRadio = function() {
+                return $scope.checkbox == '' || $scope.checkbox == 'true' || $scope.radio == '' || $scope.radio == 'true';
+            };
+            $scope.hasCheckbox = function() {
+                return $scope.checkbox == '' || $scope.checkbox == 'true';
+            };
+            $scope.hasRadio = function() {
+                return $scope.radio == '' || $scope.radio == 'true';
+            };
+            $scope.show = function (column) {
+                if (typeof column.show == 'function') {
+                    return column.show();
+                } else if (typeof column.show == 'boolean') {
+                    return column.show;
+                }
+                return true;
+            };
+            $scope.ignoreCount = 0;
+            if ($scope.showTableIndex) {
+                $scope.ignoreCount+=1;
+            }
+            if ($scope.hasCheckboxOrRadio()) {
+                $scope.ignoreCount+=1;
+            }
+        }
+    });
+    nlTables.filter('trustAsHtml',['$sce',function($sce){
+        return function(html){
+            if (html == undefined) return "";
+            html+='';
+            return $sce.trustAsHtml(html);
+        }
+    }]);
+    nlTables.directive("nlTurnPage", $nlTurnPage);
+    nlTables.factory("NLListTable", $NLListTable);
+    nlTables.factory("NLTables", $NLTablesFactory);
+    nlTables.provider("$NLTables", function abcProvider() {
+        this.setI18n = function (conf) {
+            angular.extend(this.translateJson, conf);
+        };
+        this.translateJson = {'zh-cn': {
+                "checkAll": "全选",
+                "select": "选择",
+                "statistics": "统计",
+                "turnpage_word_1": "共",
+                "turnpage_word_2": "行, ",
+                "turnpage_word_4": "页"
+            }, 'en': {
+                "checkAll": "ALL",
+                "select": "Select",
+                "statistics": "Statistics",
+                "turnpage_word_1": "Total of ",
+                "turnpage_word_2": " rows, ",
+                "turnpage_word_4": " pages"
+            }
+        };
+        this.$get = function(){
+            return this;
+        }
+    });
+    nlTables.filter("NLTableTranslate", ["$NLTables", "$injector", function ($NLTables, $injector) {
+        var $translate = $injector.has("$translate") ? $translate = $injector.get("$translate") : undefined;
+        var fun = function (tag) {
+            var lang = $translate ? $translate.use() || "zh-cn"  : "zh-cn";
+            var obj = $NLTables.translateJson[lang];
+            if (obj == undefined) return translateInstant(tag);
+            var value = obj[tag];
+            if (value != undefined) return value;
+            return translateInstant(tag);
+        };
+        function translateInstant(tag) {return $translate ? $translate.instant(tag) : tag;}
+        fun.$stateful = true;
+        return fun;
+    }]);
+    function $nlTurnPage() {
         return {
             restrict: 'EA',
             scope: {
@@ -149,15 +219,15 @@ angular.module('nlTables', [])
             },
             template:
                 "<ul class='pagination nl-table-turnpage'>" +
-                "   <li><span>一共 {{table.rows}} 条记录，每页 {{table.pageSize}} 条，共 {{table.pageCount}} 页</span></li>" +
+                "   <li><span>{{ 'turnpage_word_1' | NLTableTranslate}} {{table.rows}} {{ 'turnpage_word_2' | NLTableTranslate}} {{table.pageCount}} {{ 'turnpage_word_4' | NLTableTranslate}}</span></li>" +
                 "   <li ng-class='{disabled:(table.pageNo == 1) }'><a ng-click='table.pre()'><span aria-hidden='true'>&laquo;</span></a></li>" +
                 "   <li ng-repeat='i in table.pages' ng-class='{active:(i.index == table.pageNo)}'><a ng-click='table.go(i.index)'>{{i.text}}</a></li>" +
                 "   <li ng-class='{disabled:(table.pageNo == table.pageCount) }'><a ng-click='table.next()' ><span aria-hidden='true'>&raquo;</span></a></li>" +
                 "</ul>",
             replace: true
-        };
-    })
-    .factory("NLListTable", function () {
+        }
+    }
+    function $NLListTable() {
         return NLListTable;
         /**
          * 初始化
@@ -210,8 +280,8 @@ angular.module('nlTables', [])
             nltable.build();
             return nltable;
         }
-    })
-    .factory("NLTables", function() {
+    }
+    function $NLTablesFactory() {
         return NLTables;
         /**
          * 初始化
@@ -322,4 +392,5 @@ angular.module('nlTables', [])
             nltable.go(injectParam ? injectParam.pageNo || 1 : 1);
             return nltable;
         }
-    });
+    }
+})(angular);
