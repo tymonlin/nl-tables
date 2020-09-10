@@ -1,6 +1,6 @@
 /**
  * Created by linchunhui on 15/12/26.
- * Version 3.0.6
+ * Version 3.0.7
  * Desc 新增了click事件，radio，checkbox等。
  * 在 NLTable 中，新增了：
  *      checkAll: function()
@@ -50,8 +50,8 @@
             restrict: 'EA',
             scope: {
                 table: "=",
-                selectedRow: "=",
-                // selectRow: "&",  edit by 2020-09-10  release V3.0.6
+                // selectedRow: "=", edit by 2020-09-10  release V3.0.7
+                selectRow: "&",
                 showTableIndex: "@",
                 checkbox: "@",
                 radio: "@",
