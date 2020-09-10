@@ -1,6 +1,6 @@
 /**
  * Created by linchunhui on 15/12/26.
- * Version 3.0.5
+ * Version 3.0.6
  * Desc 新增了click事件，radio，checkbox等。
  * 在 NLTable 中，新增了：
  *      checkAll: function()
@@ -51,7 +51,7 @@
             scope: {
                 table: "=",
                 selectedRow: "=",
-                selectRow: "&",
+                // selectRow: "&",  edit by 2020-09-10  release V3.0.6
                 showTableIndex: "@",
                 checkbox: "@",
                 radio: "@",
@@ -103,19 +103,25 @@
                 return column.countFormat?column.countFormat(row):StringUtils.isEmpty(column.countColumn)?'':row[column.countColumn];
             };
             $scope.tdClick = function(column, row, columnIndex, trIndex) {
+
                 if ($scope.hasCheckboxOrRadio()) row.selected = !row.selected, $scope.checkboxChange(row, trIndex);
-                if (column.click == undefined && $scope.selectedFlag) {
+                if ($scope.selectedFlag) {
                     $scope.selectedRow = $scope.selectedRow == undefined || !$scope.autoUnselected || !angular.equals(row, $scope.selectedRow) ? row : undefined;
-                } else if (column.click != undefined) {
+                    $scope.selectRow({"row": $scope.selectedRow, "column": column, "columnIndex": columnIndex, "trIndex": trIndex});
+                }
+                if (column.click != undefined) {
                     return column.click(row, columnIndex);
                 }
             };
             $scope.isSelected = function(row) {
-                var ret = $scope.selectRow();
-                if (ret == undefined && $scope.selectedFlag) {
-                    return angular.equals(row, $scope.selectedRow);
-                }
-                return ret == undefined ? false : ret;
+                return angular.equals(row, $scope.selectedRow);
+
+                // 重写 2020-07-28 release 3.0.6
+                // var ret = $scope.selectRow({"row": row});
+                // if (ret == undefined && $scope.selectedFlag) {
+                //     return angular.equals(row, $scope.selectedRow);
+                // }
+                // return ret == undefined ? false : ret;
             };
             $scope.checkboxChange = function(changeRow, trIndex) {
                 if (typeof $scope.table.checkboxChange == 'function') {
