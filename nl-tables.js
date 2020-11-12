@@ -1,6 +1,6 @@
 /**
  * Created by linchunhui on 15/12/26.
- * Version 3.0.7
+ * Version 3.0.8
  * Desc 新增了click事件，radio，checkbox等。
  * 在 NLTable 中，新增了：
  *      checkAll: function()
@@ -100,7 +100,7 @@
                 return (column.format ? column.format(row) : row[column.name]);
             };
             $scope.getCountColumnHtml = function(column, row) {
-                return column.countFormat?column.countFormat(row):StringUtils.isEmpty(column.countColumn)?'':row[column.countColumn];
+                return column.countFormat?column.countFormat(row):column.countColumn==undefined?'':row[column.countColumn];
             };
             $scope.tdClick = function(column, row, columnIndex, trIndex) {
 
